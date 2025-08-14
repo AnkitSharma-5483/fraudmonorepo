@@ -6,7 +6,7 @@ df = pd.read_csv("balanced_dataset.csv")
 # Keep only the selected predictor columns
 predictor_columns = [
     'cc_num', 'amt', 'zip', 'lat', 'long',
-    'city_pop', 'unix_time', 'merch_lat', 'merch_long'
+    'city_pop', 'unix_time', 'merch_lat', 'merch_long', 'is-fraud'
 ]
 predictors = df[predictor_columns]
 
