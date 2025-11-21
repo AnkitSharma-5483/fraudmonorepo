@@ -5,7 +5,7 @@ WORKDIR /build
 
 # Copy Maven files for dependency caching
 COPY pom.xml .
-COPY .mvn/ ./.mvn/
+COPY .mvn ./.mvn/
 COPY mvnw .
 COPY mvnw.cmd .
 
@@ -14,7 +14,7 @@ RUN sed -i 's/\r$//' mvnw && \
     chmod +x mvnw
 
 # Copy source code
-COPY src/ ./src/
+COPY src ./src/
 
 # Build using Maven directly instead of wrapper to avoid platform issues
 RUN ls -la && mvn package -DskipTests

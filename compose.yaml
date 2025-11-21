@@ -22,8 +22,8 @@ services:
 
   quarkus-service:
     build:
-      context: ./backendservices/quarkus-service
-      dockerfile: Dockerfile
+      context: backendservices/quarkus-service
+      dockerfile: backendservices/quarkus-service/Dockerfile
     container_name: quarkus-service
     environment:
       - JAVA_OPTS=-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager
@@ -41,7 +41,7 @@ services:
 
   python-quarkus-service:
     build:
-      context: ./backendservices/python-quarkus-service
+      context: backendservices/python-quarkus-service
     container_name: python-quarkus-service
     ports:
       - "5005:5000"
@@ -51,7 +51,7 @@ services:
 
   frontend:
     build:
-      context: ./frontendservices
+      context: frontendservices
     container_name: fraud-frontend
     ports:
       - "3000:3000"
