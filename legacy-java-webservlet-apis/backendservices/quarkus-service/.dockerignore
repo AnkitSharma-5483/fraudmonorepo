@@ -3,5 +3,5 @@
 .idea/
 .vscode/
 *.iml
-target/*
+target/classes
 !target/quarkus-app/
