@@ -164,11 +164,11 @@ public class TruthGraph {
      * Derives a deterministic merchant id from merchant lat/lon.
      * Uses a simple hash to avoid collisions while keeping ids positive.
      */
-    private static long deriveMerchantId(TransactionData txn) {
+    static long deriveMerchantId(TransactionData txn) {
         long latBits = Double.doubleToLongBits(txn.getMerchLat());
         long lonBits = Double.doubleToLongBits(txn.getMerchLon());
-        // Combine with a prime-based hash and force positive
-        return Math.abs(latBits * 31 + lonBits);
+        // Combine with a prime-based hash and mask to ensure positive
+        return (latBits * 31L + lonBits) & Long.MAX_VALUE;
     }
 
     /** Linear scan for an edge – adjacency lists per node are typically small. */

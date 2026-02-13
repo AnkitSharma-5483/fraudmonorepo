@@ -110,17 +110,16 @@ public class HypothesisGraph {
      */
     public void predictorStep(TransactionData txn) {
         long sourceId = txn.getCcNum();
-        // Derive merchant id the same way the truth graph does
-        long merchantId = deriveMerchantId(txn);
+        // Use shared derivation from TruthGraph for consistency
+        long merchantId = TruthGraph.deriveMerchantId(txn);
 
         // Speculate: source will transact again with this merchant
         double confidence = Math.min(txn.getAmt() / 1000.0, 1.0); // normalized confidence
         addSpeculativeEdge(sourceId, merchantId, confidence);
 
-        // Speculate: nearby merchants (simple perturbation of merchant id)
-        // This is a lightweight heuristic – real system would use embeddings
-        long nearbyMerchant = merchantId ^ 0xFFFL; // flip low bits for a "nearby" merchant
-        addSpeculativeEdge(sourceId, nearbyMerchant, confidence * 0.3);
+        // Speculate: perturbed merchant id as a proxy for a related merchant
+        long perturbedMerchantId = merchantId ^ 0xFFFL; // flip low bits for a variant
+        addSpeculativeEdge(sourceId, perturbedMerchantId, confidence * 0.3);
     }
 
     /**
@@ -163,14 +162,5 @@ public class HypothesisGraph {
     /** Clears all speculative edges (for testing). */
     public void clear() {
         speculativeAdj.clear();
-    }
-
-    // ---- Internal ----
-
-    /** Must match TruthGraph.deriveMerchantId for consistency. */
-    private static long deriveMerchantId(TransactionData txn) {
-        long latBits = Double.doubleToLongBits(txn.getMerchLat());
-        long lonBits = Double.doubleToLongBits(txn.getMerchLon());
-        return Math.abs(latBits * 31 + lonBits);
     }
 }

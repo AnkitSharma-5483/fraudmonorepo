@@ -30,8 +30,8 @@ public final class GraphMathEngine {
             norm += src[i] * src[i];
         }
         norm = Math.sqrt(norm);
-        if (norm == 0.0) {
-            return proj; // zero vector
+        if (norm < 1e-10) {
+            return proj; // effectively zero vector
         }
         for (int i = 0; i < EntityNode.STATE_DIM; i++) {
             proj[i] = src[i] / norm;
