@@ -31,6 +31,9 @@ npm-debug.log
 yarn-error.log
 package-lock.json
 
+# React build output
+graph-visualizer/build/
+
 # Local env files
 .env
 .env.local

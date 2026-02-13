@@ -58,6 +58,15 @@ services:
     networks:
       - fraud-network
 
+  graph-visualizer:
+    build:
+      context: graph-visualizer
+    container_name: graph-visualizer
+    ports:
+      - "3001:3001"
+    networks:
+      - fraud-network
+
 networks:
   fraud-network:
     driver: bridge
