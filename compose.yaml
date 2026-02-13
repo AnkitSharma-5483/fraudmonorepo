@@ -23,7 +23,7 @@ services:
   quarkus-service:
     build:
       context: backendservices/quarkus-service
-      dockerfile: backendservices/quarkus-service/Dockerfile
+      dockerfile: Dockerfile
     container_name: quarkus-service
     environment:
       - JAVA_OPTS=-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager
