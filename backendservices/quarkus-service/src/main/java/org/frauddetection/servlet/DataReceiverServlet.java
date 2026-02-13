@@ -1,10 +1,12 @@
 package org.frauddetection.servlet;
 
 import org.frauddetection.service.FraudDetectionHandler;
+import org.frauddetection.graph.GraphAnalyticsService;
 import org.frauddetection.model.TransactionData;
 import org.json.JSONObject;
 import org.json.JSONException;
 
+import jakarta.inject.Inject;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -16,6 +18,9 @@ import jakarta.servlet.RequestDispatcher;
 
 @WebServlet("/data-handler")
 public class DataReceiverServlet extends HttpServlet {
+
+    @Inject
+    GraphAnalyticsService graphAnalyticsService;
 
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -48,6 +53,12 @@ public class DataReceiverServlet extends HttpServlet {
             
             FraudDetectionHandler handler = new FraudDetectionHandler();
             JSONObject result = handler.processTransaction(transactionData);
+
+            // Process through graph analytical pipeline
+            if (graphAnalyticsService != null) {
+                JSONObject graphResult = graphAnalyticsService.processTransaction(transactionData);
+                result.put("graphAnalytics", graphResult);
+            }
 
             
             request.setAttribute("requestJson",requestJson);
