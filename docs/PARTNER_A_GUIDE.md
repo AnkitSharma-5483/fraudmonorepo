@@ -1,5 +1,8 @@
 # Partner A Developer Guide — Graph-Analytical Layer
 
+> **Owner:** Partner A (graph math, core features, ML/DL integration)  
+> **Last Updated:** February 2026
+
 ## 1. Overview
 
 Partner A owns the **graph-driven analytical layer** of the fraud detection system. Your code lives in the `org.frauddetection.graph` package inside the Quarkus backend service and is responsible for:

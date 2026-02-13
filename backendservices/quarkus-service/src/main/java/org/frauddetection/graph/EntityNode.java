@@ -16,7 +16,7 @@ import org.frauddetection.model.TransactionData;
 public class EntityNode {
 
     /** Dimensionality of the state vector. */
-    static final int STATE_DIM = 5;
+    public static final int STATE_DIM = 5;
 
     private final long entityId;
 
