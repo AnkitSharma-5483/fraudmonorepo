@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 const SV_LABELS = ['Txn Volume', 'Avg Amount', 'Risk Score', 'Velocity', 'Diversity'];
 const SV_COLORS = ['#58a6ff', '#3fb950', '#f85149', '#d29922', '#bc8cff'];
 
-function EntityPanel({ entityData, selectedEntity, onSelectEntity }) {
+function EntityPanel({ entityData, selectedEntity, onSelectEntity, loading  }) {
   const [searchId, setSearchId] = useState('');
 
   const handleSearch = (e) => {
@@ -27,25 +27,31 @@ function EntityPanel({ entityData, selectedEntity, onSelectEntity }) {
         />
       </form>
 
-      {!entityData && (
+      {loading && (
+        <div style={{ marginTop: 10 }}>
+          <img src="/loading.gif" alt="Loading..." width={40} />
+        </div>
+      )}
+
+      {!loading && !entityData && (
         <div style={{ color: '#8b949e', fontSize: 13 }}>
           Click a node or search to inspect.
         </div>
       )}
 
-      {entityData && !entityData.found && !entityData.error && (
+      {!loading && entityData && !entityData.found && !entityData.error && (
         <div style={{ color: '#d29922', fontSize: 13 }}>
           Entity not found in graph.
         </div>
       )}
 
-      {entityData && entityData.error && (
+      {!loading && entityData && entityData.error && (
         <div style={{ color: '#f85149', fontSize: 13 }}>
           {entityData.error}
         </div>
       )}
 
-      {entityData && entityData.found && (
+      {!loading && entityData && entityData.found && (
         <div className="entity-detail">
           <div className="detail-row">
             <span className="label">Entity ID</span>

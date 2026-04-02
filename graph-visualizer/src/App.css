@@ -299,3 +299,15 @@ canvas {
   text-align: center;
   padding: 40px;
 }
+
+.loading {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loader {
+  width: 80px;
+  height: 80px;
+}

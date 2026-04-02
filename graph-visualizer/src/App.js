@@ -17,56 +17,98 @@ function App() {
   const [refreshInterval, setRefreshInterval] = useState(3);
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [loadingGraph, setLoadingGraph] = useState(true);
+  const [loadingEntity, setLoadingEntity] = useState(false);
 
-  const fetchGraphState = useCallback(async () => {
+
+  const fetchGraphState = useCallback(async (signal) => {
+    if (!graphState) setLoadingGraph(true);
+
     try {
       const [stateRes, metricsRes] = await Promise.all([
-        fetch(`${API_BASE}/graph/state`),
-        fetch(`${API_BASE}/graph/metrics`)
+        fetch(`${API_BASE}/graph/state`, { signal }),
+        fetch(`${API_BASE}/graph/metrics`, { signal })
       ]);
-      if (stateRes.ok && metricsRes.ok) {
-        setGraphState(await stateRes.json());
-        setMetrics(await metricsRes.json());
-        setLastUpdate(new Date().toLocaleTimeString());
-        setError(null);
-      }
-    } catch (err) {
-      setError('Cannot reach graph API. Is Quarkus running?');
-    }
-  }, []);
 
-  const fetchEntityState = useCallback(async (entityId) => {
+      if (!stateRes.ok) {
+        throw new Error(`graph state API fetch failed: ${stateRes.status}`);
+      }
+      if(!metricsRes.ok) {
+        throw new Error(`graph metrics API fetch failed: ${metricsRes.status}`);
+      }
+
+      setGraphState(await stateRes.json());
+      setMetrics(await metricsRes.json());
+      setLastUpdate(new Date().toLocaleTimeString());
+      setError(null);
+      
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      setError(err.message ?? 'Cannot reach graph API. Is Quarkus running?');
+    }
+    finally{
+      setLoadingGraph(false);
+    }
+  }, [graphState]);
+
+  const fetchEntityState = useCallback(async (entityId,signal) => {
+    if(!entityData) setLoadingEntity(true);
     try {
-      const res = await fetch(`${API_BASE}/graph/entity/${entityId}`);
+      const res = await fetch(`${API_BASE}/graph/entity/${entityId}`, {signal});
       if (res.ok) {
         setEntityData(await res.json());
       }
     } catch (err) {
+      if(err.name === 'AbortError') return;
       setEntityData({ error: 'Failed to fetch entity' });
     }
-  }, []);
+    finally{
+      setLoadingEntity(false);
+    }
+  }, [entityData]);
 
   useEffect(() => {
-    fetchGraphState();
+    const controller = new AbortController();
+
+    fetchGraphState(controller.signal);
+    return () => {
+      controller.abort();
+    };
   }, [fetchGraphState]);
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const id = setInterval(fetchGraphState, refreshInterval * 1000);
-    return () => clearInterval(id);
+
+    const id = setInterval(() => {
+      const controller = new AbortController();
+      fetchGraphState(controller.signal);
+    }, refreshInterval * 1000);
+    
+    return () => {
+      clearInterval(id);
+    };
   }, [autoRefresh, refreshInterval, fetchGraphState]);
 
   useEffect(() => {
-    if (selectedEntity) {
-      fetchEntityState(selectedEntity);
-    }
+    if (!selectedEntity) return;
+
+    const controller = new AbortController();
+
+    fetchEntityState(selectedEntity, controller.signal);
+
+    return () => {
+      controller.abort();
+    };
   }, [selectedEntity, fetchEntityState]);
 
   const handleResetGraph = async () => {
     if (!window.confirm('Reset graph state?')) return;
     try {
       await fetch(`${API_BASE}/graph/reset`, { method: 'POST' });
-      fetchGraphState();
+
+      const controller = new AbortController();
+      fetchGraphState(controller.signal);
+      
       setSelectedEntity(null);
       setEntityData(null);
     } catch (err) {
@@ -96,7 +138,10 @@ function App() {
             <option value={5}>5s</option>
             <option value={10}>10s</option>
           </select>
-          <button className="btn btn-refresh" onClick={fetchGraphState}>
+          <button className="btn btn-refresh" onClick={()=>{
+            const controller = new AbortController();
+            fetchGraphState(controller.signal);
+          }}>
             Refresh Now
           </button>
           <button className="btn btn-danger" onClick={handleResetGraph}>
@@ -108,26 +153,33 @@ function App() {
 
       {error && <div className="error-bar">{error}</div>}
 
-      <div className="main-layout">
-        <div className="left-panel">
-          <MetricsPanel metrics={metrics} graphState={graphState} />
+      {loadingGraph ? (
+        <div className='loading'>
+          <img className='loader' src="/loading.gif" alt="Loading..." />
         </div>
-        <div className="center-panel">
-          <GraphCanvas
-            graphState={graphState}
-            metrics={metrics}
-            onNodeClick={setSelectedEntity}
-            selectedEntity={selectedEntity}
-          />
-        </div>
-        <div className="right-panel">
-          <EntityPanel
-            entityData={entityData}
-            selectedEntity={selectedEntity}
-            onSelectEntity={setSelectedEntity}
-          />
-        </div>
-      </div>
+        ) : (
+        <div className="main-layout">
+          <div className="left-panel">
+            <MetricsPanel metrics={metrics} graphState={graphState} />
+          </div>
+          <div className="center-panel">
+            <GraphCanvas
+              graphState={graphState}
+              metrics={metrics}
+              onNodeClick={setSelectedEntity}
+              selectedEntity={selectedEntity}
+            />
+          </div>
+          <div className="right-panel">
+            <EntityPanel
+              entityData={entityData}
+              selectedEntity={selectedEntity}
+              onSelectEntity={setSelectedEntity}
+              loading={loadingEntity}
+            />
+          </div>
+        </div>)
+      }
     </div>
   );
 }

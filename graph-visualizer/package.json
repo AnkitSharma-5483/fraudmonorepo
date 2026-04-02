@@ -9,12 +9,24 @@
     "test": "react-scripts test"
   },
   "dependencies": {
-    "react": "^18.2.0",
+    "react": "^18.3.1",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1"
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version", "last 1 firefox version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version"
+    ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2"
   }
 }
