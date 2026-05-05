@@ -24,23 +24,47 @@ function App() {
   const fetchGraphState = useCallback(async (signal) => {
     if (!graphState) setLoadingGraph(true);
 
+    let success = true;
+
     try {
-      const [stateRes, metricsRes] = await Promise.all([
+      const [stateRes, metricsRes] = await Promise.allSettled([
         fetch(`${API_BASE}/graph/state`, { signal }),
         fetch(`${API_BASE}/graph/metrics`, { signal })
       ]);
 
-      if (!stateRes.ok) {
-        throw new Error(`graph state API fetch failed: ${stateRes.status}`);
-      }
-      if(!metricsRes.ok) {
-        throw new Error(`graph metrics API fetch failed: ${metricsRes.status}`);
+      // HANDLE graph state result
+      if (stateRes.status === 'fulfilled') {
+        const res = stateRes.value;
+        if(res.ok){
+          setGraphState(await res.json());
+        }else{
+          setError(`Graph state API fetch failed: ${res.status}`);
+          success = false;
+        }
+      }else{
+        setError('Graph state request failed');
+        success = false;
       }
 
-      setGraphState(await stateRes.json());
-      setMetrics(await metricsRes.json());
+
+      // HANDLE graph metrics result
+      if(metricsRes.status === 'fulfilled') {
+        const res = metricsRes.value;
+        if(res.ok){
+          setMetrics(await res.json());
+        }else{
+          setError(`Graph metrics API fetch failed: ${res.status}`);
+          success = false;
+        }
+      }else{
+        setError('Graph metrics request failed');
+        success = false;
+      }      
+      
+      if(success){
+        setError(null);
+      }
       setLastUpdate(new Date().toLocaleTimeString());
-      setError(null);
       
     } catch (err) {
       if (err.name === 'AbortError') return;
