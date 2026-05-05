@@ -2,12 +2,24 @@ import { LitElement, html } from 'lit';
 import { getCoordinates, getCityPopulation } from './geocoding.js';
 
 class FraudDetectionForm extends LitElement {
+  static properties = {
+    loading: { state: true }
+  };
+
+  constructor() {
+    super();
+    this.loading = false;
+  }
+
   createRenderRoot() {
     return this;
   }
 
   async submitForm(event) {
     event.preventDefault();
+    
+    if (this.loading) return;
+    this.loading = true;
 
     const resultDiv = document.getElementById('result');
     resultDiv.innerHTML = '<div class="alert alert-info">Processing...</div>';
@@ -19,18 +31,26 @@ class FraudDetectionForm extends LitElement {
     const merchantLocation = document.getElementById('merchantLocation').value;
 
     try {
-      const userCoords = await getCoordinates(userLocation);
-      const merchantCoords = await getCoordinates(merchantLocation);
-      const population = await getCityPopulation(userLocation);
+      const [userCoords, merchantCoords, population] = await Promise.all([
+        getCoordinates(userLocation),
+        getCoordinates(merchantLocation),
+        getCityPopulation(userLocation)
+      ]);
 
       if (!userCoords || !merchantCoords) {
         resultDiv.innerHTML = '<div class="alert alert-danger">Failed to get coordinates for locations.</div>';
         return;
       }
 
+      const amtValue = parseFloat(amt);
+
+      if(isNaN(amtValue) || amtValue <= 0){
+        throw new Error("Invalid amount");
+      }
+
       const data = {
         cc_num: ccNum,
-        amt: parseFloat(amt),
+        amt: amtValue,
         zip: zip,
         lat: userCoords.lat,
         long: userCoords.lng,
@@ -47,11 +67,15 @@ class FraudDetectionForm extends LitElement {
         body: JSON.stringify(data)
       });
 
-      const result = await response.json();
+      if(!response.ok){
+        throw new Error(`Server error: ${response.status}`)
+      }
 
       let output = '';
 
-      if (result.prediction === 1 || result.prediction === "1") {
+      const result = await response.json();
+
+      if (Number(result.prediction) === 1) {
         output += `
           <div class="alert alert-danger">
             <h4>Fraud Detected!</h4>
@@ -90,12 +114,14 @@ class FraudDetectionForm extends LitElement {
 
     } catch (error) {
       resultDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    } finally{
+      this.loading = false;
     }
   }
 
   render() {
     return html`
-      <form id="fraudForm" @submit=${this.submitForm}>
+      <form id="fraudForm" @submit=${(e) => this.submitForm(e)}>
         <div class="form-group">
           <label for="ccNum">Credit Card Number</label>
           <input type="text" class="form-control" id="ccNum" required>
@@ -116,7 +142,9 @@ class FraudDetectionForm extends LitElement {
           <label for="merchantLocation">Merchant Location</label>
           <input type="text" class="form-control" id="merchantLocation" required>
         </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <button ?disabled=${this.loading} type="submit" class="btn btn-primary">
+          ${this.loading ? 'Processing...' : 'Submit'}
+        </button>
       </form>
       <div id="result" class="mt-4"></div>
     `;
