@@ -71,24 +71,79 @@ function GraphCanvas({ graphState, metrics, onNodeClick, selectedEntity }) {
     const H = canvas.height;
     const nodes = nodesRef.current;
     const edges = edgesRef.current;
+    const cellSize = 100; // tweak based on graph density
+    const grid = new Map();
+
+    function getCellKey(x, y) {
+      const cx = Math.floor(x / cellSize);
+      const cy = Math.floor(y / cellSize);
+      return `${cx},${cy}`;
+    }
+
 
     // Simple force layout step
     const nodeMap = {};
-    nodes.forEach(n => { nodeMap[n.id] = n; });
+    nodes.forEach(n => { 
+      nodeMap[n.id] = n; 
+    
+      const key = getCellKey(n.x, n.y);
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push(n);
+    
+    });
 
     // Repulsion
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i], b = nodes[j];
-        let dx = a.x - b.x, dy = a.y - b.y;
-        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        let force = 2000 / (dist * dist);
-        let fx = (dx / dist) * force;
-        let fy = (dy / dist) * force;
-        a.vx += fx; a.vy += fy;
-        b.vx -= fx; b.vy -= fy;
-      }
-    }
+    // for (let i = 0; i < nodes.length; i++) {
+    //   for (let j = i + 1; j < nodes.length; j++) {
+    //     const a = nodes[i], b = nodes[j];
+    //     let dx = a.x - b.x, dy = a.y - b.y;
+    //     let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    //     let force = 2000 / (dist * dist);
+    //     let fx = (dx / dist) * force;
+    //     let fy = (dy / dist) * force;
+    //     a.vx += fx; a.vy += fy;
+    //     b.vx -= fx; b.vy -= fy;
+    //   }
+    // }
+
+
+    // optimized repulsion using spatial grid - only compare nodes in neighboring cells
+    const neighborOffsets = [
+      [0, 0], [1, 0], [-1, 0],
+      [0, 1], [0, -1],
+      [1, 1], [-1, -1],
+      [1, -1], [-1, 1]
+    ];
+
+    grid.forEach((cellNodes, key) => {
+      const [cx, cy] = key.split(',').map(Number);
+
+      neighborOffsets.forEach(([dxCell, dyCell]) => {
+        const neighborKey = `${cx + dxCell},${cy + dyCell}`;
+        const neighborNodes = grid.get(neighborKey);
+        if (!neighborNodes) return;
+
+        cellNodes.forEach(a => {
+          neighborNodes.forEach(b => {
+            if (a === b || a.id > b.id) return;
+
+            let dx = a.x - b.x;
+            let dy = a.y - b.y;
+            let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+            if (dist > 150) return;
+
+            let force = 2000 / (dist * dist);
+            let fx = (dx / dist) * force;
+            let fy = (dy / dist) * force;
+
+            a.vx += fx;
+            a.vy += fy;
+          });
+        });
+      });
+    });
+
 
     // Attraction along edges
     edges.forEach(e => {
