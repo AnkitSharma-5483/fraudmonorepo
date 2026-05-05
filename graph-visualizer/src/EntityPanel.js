@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 
-const SV_LABELS = ['Txn Volume', 'Avg Amount', 'Risk Score', 'Velocity', 'Diversity'];
-const SV_COLORS = ['#58a6ff', '#3fb950', '#f85149', '#d29922', '#bc8cff'];
+const STATE_VECTOR_CONFIG = [
+  { key: 'txnVolume', label: 'Txn Volume', max: 100, color: '#58a6ff' },
+  { key: 'avgAmount', label: 'Avg Amount', max: 5000, color: '#3fb950' },
+  { key: 'riskScore', label: 'Risk Score', max: 5, color: '#f85149' },
+  { key: 'velocity', label: 'Velocity', max: 100, color: '#d29922' },
+  { key: 'diversity', label: 'Diversity', max: 50, color: '#bc8cff' }
+];
 
 function EntityPanel({ entityData, selectedEntity, onSelectEntity, loading  }) {
   const [searchId, setSearchId] = useState('');
@@ -10,8 +15,13 @@ function EntityPanel({ entityData, selectedEntity, onSelectEntity, loading  }) {
     e.preventDefault();
     if (searchId.trim()) {
       onSelectEntity(searchId.trim());
+      setSearchId('');
     }
   };
+
+  const getRiskColor = (val = 0) =>
+    val > 10 ? '#f85149' :
+    val > 5 ? '#d29922' : '#3fb950';
 
   return (
     <div>
@@ -59,41 +69,35 @@ function EntityPanel({ entityData, selectedEntity, onSelectEntity, loading  }) {
           </div>
           <div className="detail-row">
             <span className="label">Risk Magnitude</span>
-            <span className="value" style={{
-              color: entityData.riskMagnitude > 10 ? '#f85149' :
-                     entityData.riskMagnitude > 5 ? '#d29922' : '#3fb950'
-            }}>
-              {entityData.riskMagnitude.toFixed(4)}
+            <span className="value" style={{color: getRiskColor(entityData.riskMagnitude)}}>
+              {(entityData.riskMagnitude ?? 0).toFixed(4)}
             </span>
           </div>
           <div className="detail-row">
             <span className="label">Hotspot Score</span>
-            <span className="value">{entityData.fraudHotspotScore.toFixed(4)}</span>
+            <span className="value">{(entityData.fraudHotspotScore ?? 0).toFixed(4)}</span>
           </div>
           <div className="detail-row">
             <span className="label">Neighbors</span>
-            <span className="value">{entityData.neighborCount}</span>
+            <span className="value">{entityData.neighborCount ?? 0}</span>
           </div>
 
           {entityData.stateVector && (
             <div style={{ marginTop: 16 }}>
               <div className="metric-label" style={{ marginBottom: 8 }}>State Vector</div>
-              {SV_LABELS.map((label, i) => {
-                const raw = entityData.stateVector[
-                  ['txnVolume', 'avgAmount', 'riskScore', 'velocity', 'diversity'][i]
-                ] || 0;
-                const maxVal = [100, 5000, 5, 100, 50][i];
-                const pct = Math.min((raw / maxVal) * 100, 100);
+              {STATE_VECTOR_CONFIG.map((item) => {
+                const raw = entityData.stateVector?.[item.key] || 0;
+                const pct = Math.min((raw / item.max) * 100, 100);
                 return (
-                  <div key={i} className="state-vector-bar">
-                    <span className="sv-label">{label}</span>
+                  <div key={item.key} className="state-vector-bar">
+                    <span className="sv-label">{item.label}</span>
                     <div className="sv-bar-container">
                       <div
                         className="sv-bar-fill"
-                        style={{ width: `${pct}%`, background: SV_COLORS[i] }}
+                        style={{ width: `${pct}%`, background: item.color }}
                       />
                     </div>
-                    <span className="sv-value">{raw.toFixed(2)}</span>
+                    <span className="sv-value">{(raw ?? 0).toFixed(2)}</span>
                   </div>
                 );
               })}
@@ -106,7 +110,7 @@ function EntityPanel({ entityData, selectedEntity, onSelectEntity, loading  }) {
                 Projected State (unit sphere)
               </div>
               <div style={{ fontSize: 12, color: '#8b949e', fontFamily: 'monospace' }}>
-                [{entityData.projectedState.map(v => v.toFixed(4)).join(', ')}]
+                [{(entityData.projectedState || []).map(v => (v ?? 0).toFixed(4)).join(', ')}]
               </div>
             </div>
           )}
